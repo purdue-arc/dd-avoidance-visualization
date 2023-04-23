@@ -13,6 +13,7 @@
 #include <limits>
 #include <chrono>
 #include <unordered_set>
+#include <queue> 
 
 // Namespaces
 using namespace std;
@@ -80,6 +81,32 @@ struct nodeComp {
 	bool operator()(const node_t* n1, const node_t* n2) {
 		return CNode::nodeCompare((node_t*)n1, (node_t*)n2);
 	}
+};
+
+// A Star class
+class AStar {
+private:
+	// Attributes
+	node_t** node_map;
+	int rows, cols, start_x, start_y, goal_x, goal_y;
+	priority_queue<node_t*, vector<node_t*>, nodeComp> pq;
+	vector<tuple<int, int>> path;
+
+	// Helper functions
+	float get_heuristic(int x_i, int y_i, int x_f, int y_f);
+	void initializePriorityQueue();
+	node_t* pop_min();
+	bool compute();
+
+public:
+	// Constructors
+	AStar(bool** occ_matrix, int rows, int cols);
+	AStar(bool** occ_matrix, int rows, int cols, int start_x, int start_y, int goal_x, int goal_y);
+
+	// API
+	node_t** get_node_map();
+	vector<tuple<int, int>> generate_path();
+	bool update_occupancy_map(bool **);
 };
 
 // Custom priority queue

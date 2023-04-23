@@ -20,11 +20,11 @@ int main() {
         }
     }
 
-    std::cout << "reached" << std::endl;
-
-    // run d star to find path
-    DStar d(maze, rows, cols);
-    vector<tuple<int, int>> path = d.generate_path();
+    // run A*/D* to find path
+    // DStar d(maze, rows, cols);
+    AStar a(maze, rows, cols);
+    // vector<tuple<int, int>> path = d.generate_path();
+    vector<tuple<int, int>> path = a.generate_path();
     
     if (path.empty()) {
         std::cout << "No possible path" << std::endl;
@@ -37,5 +37,5 @@ int main() {
         std::cout << get<0>(point) << " " << get<1>(point) << std::endl;
     }
 
-    free_2d_arr((void **) maze);
+    // free_2d_arr((void **) maze);
 }

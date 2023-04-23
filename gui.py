@@ -1,11 +1,15 @@
 import pygame
 import numpy as np
-from dstar import findPath
+from dstar import find_path
+from tkinter import *
+from tkinter import messagebox
 
 # Initializing window using pygame
 WIDTH = 800
 WINDOW = pygame.display.set_mode((WIDTH, WIDTH))
 pygame.display.set_caption("D* Visualization")
+
+ROWS = 40  # Sets how many rows are in the grid/how large the grid is
 
 # Initializing colors
 RED = (255, 0, 0)
@@ -41,6 +45,9 @@ class Node:
     def is_barrier(self):
         return self.color == BLACK
 
+    def is_path(self):
+        return self.color == ORANGE
+
     def is_start(self):
         return self.color == TURQUOISE
 
@@ -60,6 +67,9 @@ class Node:
     def make_barrier(self):
         self.value = 1
         self.color = BLACK
+
+    def make_path(self):
+        self.color = ORANGE
 
     def make_end(self):
         self.color = PURPLE
@@ -81,7 +91,7 @@ def make_grid(rows, width):
     return grid
 
 
-# Drawing the lines on the screen that create the appearence of a grid
+# Drawing the lines on the screen that create the appearance of a grid
 def draw_grid(window, rows, width):
     space = width // rows
 
@@ -91,7 +101,7 @@ def draw_grid(window, rows, width):
             pygame.draw.line(window, GREY, [j * space, 0], [j * space, width])
 
 
-# Drawing the grid and all of the nodes onto the screen with their corresponding color
+# Drawing the grid and all the nodes onto the screen with their corresponding color
 def draw(window, grid, rows, width):
     window.fill(WHITE)
 
@@ -114,8 +124,12 @@ def get_clicked_pos(pos, rows, width):
     return row, col
 
 
+def show_error_message(message):
+    Tk().wm_withdraw()
+    messagebox.showerror(title="Error", message=message)
+
+
 def main(window, width):
-    ROWS = 20  # Sets how many rows are in the grid/how large the grid is
     grid = make_grid(ROWS, width)
 
     # Both are normally None
@@ -127,6 +141,7 @@ def main(window, width):
     end.make_end()
 
     running = True
+    lastComputedPath = []
     while running:
         draw(window, grid, ROWS, width)
         for event in pygame.event.get():
@@ -147,7 +162,7 @@ def main(window, width):
                     continue
 
                 # Normally elif
-                if node.is_open():
+                if node.is_open() or node.is_path():
                     node.make_barrier()
                 else:
                     node.make_open()
@@ -156,21 +171,31 @@ def main(window, width):
             elif pygame.mouse.get_pressed()[2]:
                 pos = pygame.mouse.get_pos()
                 row, col = get_clicked_pos(pos, ROWS, width)
+
+                if not 0 <= row < ROWS or not 0 <= col < ROWS:
+                    continue
+
                 node = grid[row][col]
                 node.reset()  # Making the node white
-
-                """
-                if node == start:
-                    start = None
-                elif node == end:
-                    end = None
-                """
 
             # Checking if the r button has been pressed
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_g:
-                    path = findPath(grid)
-                    print(path)
+                    path = find_path(grid)
+
+                    if len(path) == 0:
+                        show_error_message("No possible path")
+                        continue
+
+                    for point in lastComputedPath:
+                        x, y = point
+                        if grid[x][y].is_path():
+                            grid[x][y].make_open()
+
+                    for point in path:
+                        x, y = point
+                        grid[x][y].make_path()
+                    lastComputedPath = path
                 elif event.key == pygame.K_r:
                     for row in grid:
                         for node in row:

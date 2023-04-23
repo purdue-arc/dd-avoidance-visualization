@@ -15,7 +15,7 @@ from subprocess import Popen, PIPE
 #         index += 1
 
 
-def findPath(nodes):
+def find_path(nodes):
     p = Popen(["dstar.exe"], shell=True, stdout=PIPE, stdin=PIPE)
 
     rows = len(nodes)
@@ -31,7 +31,7 @@ def findPath(nodes):
             inputStr += f"{node.value} "
         if i < len(nodes) - 1:
             inputStr += "\n"
-    print(inputStr)
+    # print(inputStr)
 
     # writes input
     p.stdin.write(bytes(inputStr, "UTF-8"))
@@ -42,7 +42,7 @@ def findPath(nodes):
     # decodes output
     byteLines = p.stdout.readlines()
     output = "\n".join([line.decode("UTF-8").strip() for line in byteLines])
-    print("Output: " + output)
+    # print("Output: " + output)
 
     noPossiblePath = output == "No possible path"
     if noPossiblePath:
@@ -51,9 +51,9 @@ def findPath(nodes):
     # extracts path from output
     path = []
     points = output.split("\n")
-    for point in points:
-        print("Point: " + point)
-        x, y = point.split(" ")
+    for i in range(1, len(points) - 1):
+        # print("Point: " + points[i])
+        x, y = points[i].split(" ")
         path.append((int(x), int(y)))
 
     return path
