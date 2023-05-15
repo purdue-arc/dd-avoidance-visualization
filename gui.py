@@ -1,9 +1,15 @@
 import pygame
+import numpy as np
+from dstar import find_path
+from tkinter import *
+from tkinter import messagebox
 
 # Initializing window using pygame
 WIDTH = 800
 WINDOW = pygame.display.set_mode((WIDTH, WIDTH))
 pygame.display.set_caption("D* Visualization")
+
+ROWS = 40  # Sets how many rows are in the grid/how large the grid is
 
 # Initializing colors
 RED = (255, 0, 0)
@@ -33,14 +39,14 @@ class Node:
     def get_position(self):
         return self.row, self.col
 
-    def is_closed(self):
-        return self.color == RED
-
     def is_open(self):
-        return self.color == GREEN
+        return self.color == WHITE
 
     def is_barrier(self):
         return self.color == BLACK
+
+    def is_path(self):
+        return self.color == ORANGE
 
     def is_start(self):
         return self.color == TURQUOISE
@@ -49,27 +55,24 @@ class Node:
         return self.color == PURPLE
 
     def reset(self):
-        self.color = WHITE
-        self.value = 0
+        self.make_open()
 
     def make_start(self):
         self.color = TURQUOISE
 
-    def make_closed(self):
-        self.color = RED
-
     def make_open(self):
-        self.color = GREEN
+        self.value = 0
+        self.color = WHITE
 
     def make_barrier(self):
         self.value = 1
         self.color = BLACK
 
-    def make_end(self):
-        self.color = PURPLE
-
     def make_path(self):
         self.color = ORANGE
+
+    def make_end(self):
+        self.color = PURPLE
 
     def draw_node(self, window):
         pygame.draw.rect(window, self.color, pygame.Rect(self.x, self.y, self.width, self.width))
@@ -77,19 +80,18 @@ class Node:
 
 # Making a 2D grid filled with node objects
 def make_grid(rows, width):
-    grid = []
+    grid = np.empty((rows, rows), dtype=Node)
     space = width // rows
 
     for i in range(rows):
-        grid.append([])
         for j in range(rows):
             node = Node(i, j, space, rows)
-            grid[i].append(node)
+            grid[i][j] = node
 
     return grid
 
 
-# Drawing the lines on the screen that create the appearence of a grid
+# Drawing the lines on the screen that create the appearance of a grid
 def draw_grid(window, rows, width):
     space = width // rows
 
@@ -99,7 +101,7 @@ def draw_grid(window, rows, width):
             pygame.draw.line(window, GREY, [j * space, 0], [j * space, width])
 
 
-# Drawing the grid and all of the nodes onto the screen with their corresponding color
+# Drawing the grid and all the nodes onto the screen with their corresponding color
 def draw(window, grid, rows, width):
     window.fill(WHITE)
 
@@ -111,7 +113,7 @@ def draw(window, grid, rows, width):
     pygame.display.update()
 
 
-# Getting the position in the grid where the mouse clicked
+# Getting the position with the grid where the mouse clicked
 def get_clicked_pos(pos, rows, width):
     space = width // rows
     y, x = pos
@@ -122,69 +124,84 @@ def get_clicked_pos(pos, rows, width):
     return row, col
 
 
+def show_error_message(message):
+    Tk().wm_withdraw()
+    messagebox.showerror(title="Error", message=message)
+
+
 def main(window, width):
-    ROWS = 100  # Sets how many rows are in the grid/how large the grid is
     grid = make_grid(ROWS, width)
 
     # Both are normally None
     start = grid[0][0]
-    end = grid[99][99]
+    end = grid[ROWS - 1][ROWS - 1]
 
     # Initializing start and end nodes
     start.make_start()
     end.make_end()
 
-    run = True
-    while run:
+    running = True
+    lastComputedPath = []
+    while running:
         draw(window, grid, ROWS, width)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                run = False
+                running = False
+                break
 
-            # Checking if the right mouse button has been pressed
+            # Checking if the left mouse button has been pressed
             if pygame.mouse.get_pressed()[0]:
                 pos = pygame.mouse.get_pos()
                 row, col = get_clicked_pos(pos, ROWS, width)
+
+                if not 0 <= row < ROWS or not 0 <= col < ROWS:
+                    continue
+
                 node = grid[row][col]
+                if node.is_start() or node.is_end():
+                    continue
 
-                """
-                if not start and node != end:
-                    start = node
-                    start.make_start()
-
-                elif not end and node != start:
-                    end = node
-                    end.make_end()
-                """
-
-                #Normally elif
-                if node != end and node != start:
+                # Normally elif
+                if node.is_open() or node.is_path():
                     node.make_barrier()
+                else:
+                    node.make_open()
 
-            # Checking if the left mouse button has been pressed
+            # Checking if the right mouse button has been pressed
             elif pygame.mouse.get_pressed()[2]:
                 pos = pygame.mouse.get_pos()
                 row, col = get_clicked_pos(pos, ROWS, width)
+
+                if not 0 <= row < ROWS or not 0 <= col < ROWS:
+                    continue
+
                 node = grid[row][col]
                 node.reset()  # Making the node white
 
-                """
-                if node == start:
-                    start = None
-                elif node == end:
-                    end = None
-                """
-            # Checking if the r button has been pressed
+            # Checking if a key is pressed
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:
+                if event.key == pygame.K_g:
+                    path = find_path(grid)
+
+                    if len(path) == 0:
+                        show_error_message("No possible path")
+                        continue
+
+                    for point in lastComputedPath:
+                        x, y = point
+                        if grid[x][y].is_path():
+                            grid[x][y].make_open()
+
+                    for point in path:
+                        x, y = point
+                        grid[x][y].make_path()
+                    lastComputedPath = path
+                elif event.key == pygame.K_r:
                     for row in grid:
                         for node in row:
                             node.reset()
                             start.make_start()
                             end.make_end()
-
-               # start = None
-               # end = None
 
     pygame.quit()
 
