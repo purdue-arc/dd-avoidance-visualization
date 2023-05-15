@@ -113,7 +113,7 @@ def draw(window, grid, rows, width):
     pygame.display.update()
 
 
-# Getting the position in the grid where the mouse clicked
+# Getting the position with the grid where the mouse clicked
 def get_clicked_pos(pos, rows, width):
     space = width // rows
     y, x = pos
@@ -178,7 +178,7 @@ def main(window, width):
                 node = grid[row][col]
                 node.reset()  # Making the node white
 
-            # Checking if the r button has been pressed
+            # Checking if a key is pressed
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_g:
                     path = find_path(grid)
